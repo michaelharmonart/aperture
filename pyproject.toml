@@ -9,6 +9,12 @@ line-length = 100
 
 [tool.pyright]
 typeCheckingMode = "recommended"
+extraPaths = [
+    "./.stubs/",
+    "/usr/autodesk/ApplicationPlugins/ngskintools2/Contents/scripts",
+    "/usr/autodesk/maya/lib/python3.11",
+    "/usr/autodesk/maya/lib/python3.11/site-packages",
+]
 
 [dependency-groups]
 dev = [

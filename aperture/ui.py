@@ -1,13 +1,10 @@
 from shiboken6.Shiboken import Object
 
-
 from maya import OpenMayaUI as omui
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QMainWindow, QPushButton, QScrollArea, QVBoxLayout, QWidget
 from shiboken6 import wrapInstance
-from shiboken6.Shiboken import Object
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
-
 
 def get_maya_main_window() -> Object:
     mw_ptr = omui.MQtUtil.mainWindow()
@@ -17,7 +14,7 @@ def get_maya_main_window() -> Object:
 class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
     def __init__(
         self,
-        parent: QWidget | None = get_maya_main_window(),
+        parent,
     ) -> None:
         super().__init__(parent=parent)
         self.setWindowTitle("Aperture")
@@ -27,7 +24,7 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
         self.setLayout(main_layout)
         
         title_label = QLabel("Aperture")
-        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title_label.setStyleSheet("""
             font-size: 14pt;
             font-weight: bold;
@@ -45,7 +42,7 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
         scroll_content = QWidget()
 
         scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
+        #scroll_area.setWidgetResizable(True)
         horizontal_layout.addWidget(scroll_area)
 
         scroll_content = QWidget()
@@ -65,11 +62,11 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
         static_content.setLayout(static_layout)
         horizontal_layout.addWidget(static_content)
 
-        load_button = QPushButton(f"Load Snapshot")
+        load_button = QPushButton("Load Snapshot")
         static_layout.addWidget(load_button)
         static_layout.addWidget(QLabel("Test"))
         
 
 def launch() -> None:
-    aperture_window = ApertureWindow()
+    aperture_window = ApertureWindow(parent=get_maya_main_window())
     aperture_window.show(dockable=True)
