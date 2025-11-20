@@ -1,10 +1,21 @@
+from maya import OpenMayaUI as omui
+from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QPushButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
+from shiboken6 import wrapInstance
 from shiboken6.Shiboken import Object
 
-from maya import OpenMayaUI as omui
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QMainWindow, QPushButton, QScrollArea, QVBoxLayout, QWidget
-from shiboken6 import wrapInstance
-from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
+from aperture.core.file import get_current_filepath
+
 
 def get_maya_main_window() -> Object:
     mw_ptr = omui.MQtUtil.mainWindow()
@@ -18,20 +29,22 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
     ) -> None:
         super().__init__(parent=parent)
         self.setWindowTitle("Aperture")
-
-
         main_layout = QVBoxLayout(self)
         self.setLayout(main_layout)
-        
-        title_label = QLabel("Aperture")
+
+        title_label = QLabel("Aperture: Animation Snapshots")
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title_label.setStyleSheet("""
-            font-size: 14pt;
+            font-size: 12pt;
             font-weight: bold;
             padding: 6px;
         """)
         main_layout.addWidget(title_label)
-
+        filepath = get_current_filepath()
+        if filepath is not None:
+            information_label = QLabel(str(filepath))
+            information_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            main_layout.addWidget(information_label)
 
 
         main_content = QWidget()

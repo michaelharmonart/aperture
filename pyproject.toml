@@ -2,18 +2,23 @@
 name = "aperture"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "gitpython>=3.1.45",
+    "maya-stubs>=0.4.2",
+]
 
 [tool.ruff]
 line-length = 100
 
 [tool.pyright]
-typeCheckingMode = "recommended"
+typeCheckingMode = "off"
 extraPaths = [
     "./.stubs/",
-    "/usr/autodesk/ApplicationPlugins/ngskintools2/Contents/scripts",
-    "/usr/autodesk/maya/lib/python3.11",
+    "./.venv/lib/python3.11/site-packages",
+    "/usr/autodesk/maya/lib/python3.11/",
     "/usr/autodesk/maya/lib/python3.11/site-packages",
+    "/usr/autodesk/ApplicationPlugins/ngskintools2/Contents/scripts",
+
 ]
 
 [dependency-groups]
