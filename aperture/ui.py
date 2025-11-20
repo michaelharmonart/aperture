@@ -1,3 +1,4 @@
+
 from maya import OpenMayaUI as omui
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from PySide6.QtCore import Qt
@@ -15,7 +16,7 @@ from shiboken6 import wrapInstance
 from shiboken6.Shiboken import Object
 
 from aperture.core.file import get_current_filepath
-
+from aperture.core.snapshot import save_and_snapshot
 
 def get_maya_main_window() -> Object:
     mw_ptr = omui.MQtUtil.mainWindow()
@@ -75,10 +76,17 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
         static_content.setLayout(static_layout)
         horizontal_layout.addWidget(static_content)
 
+        save_button = QPushButton("Save Snapshot")
+        static_layout.addWidget(save_button)
+        save_button.clicked.connect(save_snapshot)
+
         load_button = QPushButton("Load Snapshot")
         static_layout.addWidget(load_button)
         static_layout.addWidget(QLabel("Test"))
         
+def save_snapshot():
+    save_and_snapshot()
+    pass
 
 def launch() -> None:
     aperture_window = ApertureWindow(parent=get_maya_main_window())

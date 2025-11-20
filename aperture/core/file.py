@@ -10,3 +10,10 @@ def get_current_filepath() -> Path | None:
     if filename == "":
         return None
     return Path(filename)
+
+def save_file():
+    cmds.file(save=True, force=True)
+    
+def load_file(path: Path):
+    cmds.file(str(path), open=True, force=True)
+    print(f"loading {path}")
