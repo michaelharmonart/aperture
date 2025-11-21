@@ -18,7 +18,7 @@ class Autosaver(QtCore.QObject):
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.autosave)
         self.is_enabled: bool = False
-        self.interval_minutes = 1
+        self.interval_minutes = 5
         
         # Parent to Maya's main window to persist
         maya_main = self.get_maya_main_window()

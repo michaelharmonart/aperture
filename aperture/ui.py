@@ -1,4 +1,4 @@
-
+from curses import color_pair
 from typing import Any
 
 
@@ -23,7 +23,13 @@ from shiboken6 import wrapInstance
 from shiboken6.Shiboken import Object
 
 from aperture.core.file import get_current_filepath
-from aperture.core.snapshot import Snapshot, get_or_init_repo, get_snapshots, load_snapshot, save_and_snapshot
+from aperture.core.snapshot import (
+    Snapshot,
+    get_snapshots,
+    load_snapshot,
+    save_and_snapshot,
+)
+
 
 def get_maya_main_window() -> Object:
     mw_ptr = omui.MQtUtil.mainWindow()
@@ -33,27 +39,42 @@ def get_maya_main_window() -> Object:
 class SnapshotCard(QtWidgets.QFrame):
     def __init__(self, snapshot: Snapshot, parent=None) -> None:
         super().__init__(parent)
-        self.setStyleSheet("""
-            QFrame {
-                background-color: #2E3440;
+        self.color_pairs = {"Autosave:": "#23292b", "Snapshot:": "#41786b"}
+        self.color_str = "#2E3440"
+        for key, color in self.color_pairs.items():
+            if snapshot.commit.message.startswith(key):
+                self.color_str = color
+        self.setStyleSheet(f"""
+            QFrame {{
+                border-color: {self.color_str};
                 border-radius: 6px;
-            }
+                border-style: solid;
+                border-width: 4px;
+            }}
         """)
         self.snapshot = snapshot
         self.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
 
         layout = QtWidgets.QVBoxLayout(self)
-
-        message = QtWidgets.QLabel(self.snapshot.commit.summary)
-        message.setWordWrap(True)
-        load_button = QtWidgets.QPushButton("Load Snapshot")
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        load_button = QtWidgets.QPushButton(self.snapshot.commit.message)
         load_button.clicked.connect(self.call_load_snapshot)
+        load_button.setStyleSheet("padding-left: 4px; text-align: left;")
+        load_button.setMinimumWidth(50)
+        load_button.setStyleSheet("""
+            QPushButton {
+                background-color: #454B4D;
+                padding: 4px;
+                text-align: left;
+            }
+        """)
 
-        layout.addWidget(message)
         layout.addWidget(load_button)
 
     def call_load_snapshot(self) -> None:
         load_snapshot(self.snapshot)
+
 
 class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
     def __init__(
@@ -68,13 +89,13 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
         self.refresh_snapshots()
         self.autosaver.autosave_completed.connect(self.refresh_snapshots)
 
-    def setup_ui(self):    
+    def setup_ui(self):
         self.setWindowTitle("Aperture")
 
         # ---------- MAIN LAYOUT ----------
         main_layout = QVBoxLayout(self)
         self.setLayout(main_layout)
-        
+
         # Filepath
         filepath = get_current_filepath()
         if filepath is not None:
@@ -87,15 +108,18 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
         autosave_content = QGroupBox("Autosave Settings")
         main_layout.addWidget(autosave_content)
         autosave_layout = QHBoxLayout()
+        autosave_layout.setContentsMargins(4,4,4,4)
         autosave_content.setLayout(autosave_layout)
 
         self.autosave_checkbox = QtWidgets.QCheckBox("Enable")
         self.autosave_checkbox.stateChanged.connect(self.toggle_autosave)
         autosave_layout.addWidget(self.autosave_checkbox)
-        
+        autosave_layout.addStretch(1)
+
         # Interval controls
         interval_content = QWidget()
         interval_layout = QtWidgets.QHBoxLayout()
+        interval_layout.setContentsMargins(0,0,0,0)
         interval_layout.addWidget(QtWidgets.QLabel("Interval:"))
         interval_content.setLayout(interval_layout)
         autosave_layout.addWidget(interval_content)
@@ -113,7 +137,7 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
         save_button = QPushButton("Save Snapshot")
         save_button.setStyleSheet("""
             QPushButton {
-                background-color: #266e1e;
+                background-color: #41786b;
             }
         """)
         main_layout.addWidget(save_button)
@@ -125,6 +149,7 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
         main_layout.addWidget(scroll_area)
 
         self.snapshot_scroll_layout = QVBoxLayout()
+        self.snapshot_scroll_layout.setSpacing(6)
         scroll_content.setLayout(self.snapshot_scroll_layout)
         self.snapshot_scroll_layout.addStretch(1)
         scroll_area.setWidget(scroll_content)
@@ -132,7 +157,6 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
         scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         self.snapshot_scroll_layout.addStretch()
-
 
     def refresh_snapshots(self):
         for snapshot in reversed(get_snapshots()):
@@ -153,7 +177,7 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
     def update_ui_from_autosaver(self):
         """Update UI to match current autosaver state"""
         self.autosave_checkbox.setChecked(self.autosaver.is_enabled)
-        
+
         # Set combo box to match current interval
         interval_text = f"{self.autosaver.interval_minutes} min"
         index = self.interval_combo.findText(interval_text)
@@ -169,6 +193,7 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
         interval = int(text.split()[0])
         self.autosaver.set_interval(interval)
         pass
+
 
 def launch() -> None:
     aperture_window = ApertureWindow(parent=get_maya_main_window())
