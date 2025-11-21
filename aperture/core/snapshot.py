@@ -51,10 +51,10 @@ def get_snapshots() -> list[Snapshot]:
     return [Snapshot(commit) for commit in repo.iter_commits()]
 
 def save_and_snapshot(message: str | None = None, autosave: bool = False) -> Snapshot | None:
-    save_file()
     current_file = get_current_filepath()
-    if not is_file_modified():
+    if autosave and not is_file_modified():
         return
+    save_file()
     repo = get_or_init_repo()
     if current_file and repo:
         return create_snapshot(repo=repo, filepath=current_file, message=message, autosave=autosave)

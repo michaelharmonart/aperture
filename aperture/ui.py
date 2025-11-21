@@ -71,20 +71,10 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
     def setup_ui(self):    
         self.setWindowTitle("Aperture")
 
-        # ---------- MAIN LAYOUT (VERTICAL COLUMN) ----------
+        # ---------- MAIN LAYOUT ----------
         main_layout = QVBoxLayout(self)
         self.setLayout(main_layout)
         
-        # Title
-        title_label = QLabel("Aperture")
-        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title_label.setStyleSheet("""
-            font-size: 12pt;
-            font-weight: bold;
-            padding: 6px;
-        """)
-        main_layout.addWidget(title_label)
-
         # Filepath
         filepath = get_current_filepath()
         if filepath is not None:
@@ -155,7 +145,7 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
         name = None
         if self.snapshot_name_line.text() != "":
             name = f"Snapshot: {self.snapshot_name_line.text()}"
-        
+        self.snapshot_name_line.setText("")
         save_and_snapshot(name)
         self.refresh_snapshots()
         pass
@@ -168,8 +158,6 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
         interval_text = f"{self.autosaver.interval_minutes} min"
         index = self.interval_combo.findText(interval_text)
         self.interval_combo.setCurrentIndex(index)
-
-        print(self.autosaver.is_enabled, self.autosaver.interval_minutes)
 
     def toggle_autosave(self, state):
         if state == 0:

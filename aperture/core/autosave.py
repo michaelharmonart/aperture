@@ -19,14 +19,14 @@ class Autosaver(QtCore.QObject):
         self.timer.timeout.connect(self.autosave)
         self.is_enabled: bool = False
         self.interval_minutes = 1
-
+        
         # Parent to Maya's main window to persist
         maya_main = self.get_maya_main_window()
         if maya_main:
             self.setParent(maya_main)
 
         self.load_preferences()
-        
+
     def start(self, interval_minutes: float | None = None):
         """Start autosave timer with specified interval"""
         if interval_minutes is not None:
