@@ -4,7 +4,7 @@ import os
 import pwd
 
 from pathlib import Path
-from aperture.core.file import get_current_filepath, load_file, save_file
+from aperture.core.file import get_current_filepath, is_file_modified, load_file, save_file
 from git import Commit, InvalidGitRepositoryError, Repo
 import git
 
@@ -53,6 +53,8 @@ def get_snapshots() -> list[Snapshot]:
 def save_and_snapshot(message: str | None = None, autosave: bool = False) -> Snapshot | None:
     save_file()
     current_file = get_current_filepath()
+    if not is_file_modified():
+        return
     repo = get_or_init_repo()
     if current_file and repo:
         return create_snapshot(repo=repo, filepath=current_file, message=message, autosave=autosave)

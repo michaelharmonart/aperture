@@ -11,6 +11,15 @@ def get_current_filepath() -> Path | None:
         return None
     return Path(filename)
 
+def is_file_modified() -> bool:
+    """
+    Checks if the current Maya scene has unsaved modifications.
+
+    Returns:
+        bool: True if the scene has unsaved changes, False otherwise.
+    """
+    return cmds.file(query=True, modified=True)
+
 def save_file():
     cmds.file(save=True, force=True)
     
