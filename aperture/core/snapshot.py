@@ -8,7 +8,7 @@ from aperture.core.file import get_current_filepath, load_file, save_file
 from git import Commit, InvalidGitRepositoryError, Repo
 import git
 
-@dataclass
+@dataclass(eq=True, frozen=True)
 class Snapshot():
     commit: Commit
 
@@ -39,12 +39,20 @@ def create_snapshot(repo: Repo, filepath: Path, message: str | None = None) -> S
     commit = repo.index.commit(message)
     return Snapshot(commit)
 
-def save_and_snapshot() -> Snapshot | None:
+def get_snapshots() -> list[Snapshot]:
+    repo = get_or_init_repo()
+    if repo is None:
+        return []
+    if repo.head.is_valid() is False:
+        return []
+    return [Snapshot(commit) for commit in repo.iter_commits()]
+
+def save_and_snapshot(message: str | None) -> Snapshot | None:
     save_file()
     current_file = get_current_filepath()
     repo = get_or_init_repo()
     if current_file and repo:
-        return create_snapshot(repo, current_file)
+        return create_snapshot(repo, current_file, message)
 
 def restore_snapshot(snapshot: Snapshot):
     repo = get_or_init_repo()
