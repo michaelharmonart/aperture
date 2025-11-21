@@ -110,7 +110,7 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
         interval_content.setLayout(interval_layout)
         autosave_layout.addWidget(interval_content)
         self.interval_combo = QtWidgets.QComboBox()
-        self.interval_combo.addItems(["1 min", "5 min", "10 min", "20min", "30 min"])
+        self.interval_combo.addItems(["1 min", "5 min", "10 min", "20 min", "30 min"])
         self.interval_combo.setCurrentIndex(2)
         self.interval_combo.currentTextChanged.connect(self.change_interval)
         interval_layout.addWidget(self.interval_combo)
