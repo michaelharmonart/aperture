@@ -3,11 +3,13 @@ from typing import Any
 
 
 from PySide6 import QtWidgets
+from aperture.core.autosave import Autosaver
 from maya import OpenMayaUI as omui
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog,
+    QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -31,7 +33,12 @@ def get_maya_main_window() -> Object:
 class SnapshotCard(QtWidgets.QFrame):
     def __init__(self, snapshot: Snapshot, parent=None) -> None:
         super().__init__(parent)
-    
+        self.setStyleSheet("""
+            QFrame {
+                background-color: #2E3440;
+                border-radius: 6px;
+            }
+        """)
         self.snapshot = snapshot
         self.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
 
@@ -48,16 +55,20 @@ class SnapshotCard(QtWidgets.QFrame):
     def call_load_snapshot(self) -> None:
         load_snapshot(self.snapshot)
 
-
 class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
     def __init__(
         self,
         parent,
     ) -> None:
         super().__init__(parent=parent)
-
+        self.autosaver = Autosaver.get_instance()
         self.snapshots: list[Snapshot] = []
+        self.setup_ui()
+        self.update_ui_from_autosaver()
+        self.refresh_snapshots()
+        self.autosaver.autosave_completed.connect(self.refresh_snapshots)
 
+    def setup_ui(self):    
         self.setWindowTitle("Aperture")
 
         # ---------- MAIN LAYOUT (VERTICAL COLUMN) ----------
@@ -82,12 +93,28 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
             information_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             main_layout.addWidget(information_label)
 
+        # Autosave Settings
+        autosave_content = QGroupBox("Autosave Settings")
+        main_layout.addWidget(autosave_content)
+        autosave_layout = QHBoxLayout()
+        autosave_content.setLayout(autosave_layout)
+
+        self.autosave_checkbox = QtWidgets.QCheckBox("Enable Autosave")
+        self.autosave_checkbox.stateChanged.connect(self.toggle_autosave)
+        autosave_layout.addWidget(self.autosave_checkbox)
+        
+
         # Snapshot Settings
         self.snapshot_name_line = QLineEdit()
         self.snapshot_name_line.setPlaceholderText("Enter Snapshot Name (Optional)")
         main_layout.addWidget(self.snapshot_name_line)
 
         save_button = QPushButton("Save Snapshot")
+        save_button.setStyleSheet("""
+            QPushButton {
+                background-color: #266e1e;
+            }
+        """)
         main_layout.addWidget(save_button)
         save_button.clicked.connect(self.save_snapshot)
 
@@ -96,7 +123,6 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
         scroll_area = QScrollArea()
         main_layout.addWidget(scroll_area)
 
-        scroll_content = QWidget()
         self.snapshot_scroll_layout = QVBoxLayout()
         scroll_content.setLayout(self.snapshot_scroll_layout)
         self.snapshot_scroll_layout.addStretch(1)
@@ -106,7 +132,6 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
 
         self.snapshot_scroll_layout.addStretch()
 
-        self.refresh_snapshots()
 
     def refresh_snapshots(self):
         for snapshot in reversed(get_snapshots()):
@@ -123,6 +148,23 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
         save_and_snapshot(name)
         self.refresh_snapshots()
         pass
+
+    def update_ui_from_autosaver(self):
+        """Update UI to match current autosaver state"""
+        self.autosave_checkbox.setChecked(self.autosaver.is_enabled)
+        
+        # Set combo box to match current interval
+        #interval_text = f"{self.autosaver.interval_minutes} min"
+        #index = self.interval_combo.findText(interval_text)
+        #if index >= 0:
+        #    self.interval_combo.setCurrentIndex(index)
+
+    def toggle_autosave(self, state):
+        if state == 0:
+            self.autosaver.stop()
+        else:
+            self.autosaver.start()
+        
 
 def launch() -> None:
     aperture_window = ApertureWindow(parent=get_maya_main_window())

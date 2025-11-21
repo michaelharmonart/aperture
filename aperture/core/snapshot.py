@@ -23,18 +23,21 @@ def get_username() -> str:
         return "Windows User"
 
 def get_or_init_repo() -> Repo | None:
-    path = get_current_filepath().parent
+    path = get_current_filepath()
     if path is not None:
         try:
-            return Repo(path)
+            return Repo(path.parent)
         except InvalidGitRepositoryError:
-            return Repo.init(path)
+            return Repo.init(path.parent)
     else:
         return None
 
-def create_snapshot(repo: Repo, filepath: Path, message: str | None = None) -> Snapshot:
+def create_snapshot(repo: Repo, filepath: Path, message: str | None = None, autosave: bool = False) -> Snapshot:
     if message is None:
-        message = f"Snapshot: {get_username()} at {get_time_string()}"
+        if autosave:
+            message = f"Autosave: {get_time_string()}"
+        else:
+            message = f"Snapshot: {get_time_string()}"
     repo.index.add(filepath)
     commit = repo.index.commit(message)
     return Snapshot(commit)
@@ -47,16 +50,17 @@ def get_snapshots() -> list[Snapshot]:
         return []
     return [Snapshot(commit) for commit in repo.iter_commits()]
 
-def save_and_snapshot(message: str | None) -> Snapshot | None:
+def save_and_snapshot(message: str | None = None, autosave: bool = False) -> Snapshot | None:
     save_file()
     current_file = get_current_filepath()
     repo = get_or_init_repo()
     if current_file and repo:
-        return create_snapshot(repo, current_file, message)
+        return create_snapshot(repo=repo, filepath=current_file, message=message, autosave=autosave)
 
 def restore_snapshot(snapshot: Snapshot):
     repo = get_or_init_repo()
-    repo.git.checkout(snapshot.commit.hexsha, "--", get_current_filepath())
+    if repo is not None:
+        repo.git.checkout(snapshot.commit.hexsha, "--", get_current_filepath())
 
 def load_snapshot(snapshot: Snapshot):
     restore_snapshot(snapshot)
