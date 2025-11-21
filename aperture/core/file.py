@@ -24,5 +24,16 @@ def save_file():
     cmds.file(save=True, force=True)
     
 def load_file(path: Path):
+    if is_file_modified():
+        result = cmds.confirmDialog(
+            title='Unsaved Changes',
+            message='The current scene has unsaved changes.\nContinue without making a snapshot?',
+            button=['Yes', 'No'],
+            defaultButton='No',
+            cancelButton='No',
+            dismissString='No'
+        )
+        if result == 'No':
+            return
     cmds.file(str(path), open=True, force=True)
     print(f"loading {path}")
