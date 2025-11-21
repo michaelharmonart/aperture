@@ -99,10 +99,21 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
         autosave_layout = QHBoxLayout()
         autosave_content.setLayout(autosave_layout)
 
-        self.autosave_checkbox = QtWidgets.QCheckBox("Enable Autosave")
+        self.autosave_checkbox = QtWidgets.QCheckBox("Enable")
         self.autosave_checkbox.stateChanged.connect(self.toggle_autosave)
         autosave_layout.addWidget(self.autosave_checkbox)
         
+        # Interval controls
+        interval_content = QWidget()
+        interval_layout = QtWidgets.QHBoxLayout()
+        interval_layout.addWidget(QtWidgets.QLabel("Interval:"))
+        interval_content.setLayout(interval_layout)
+        autosave_layout.addWidget(interval_content)
+        self.interval_combo = QtWidgets.QComboBox()
+        self.interval_combo.addItems(["1 min", "5 min", "10 min", "20min", "30 min"])
+        self.interval_combo.setCurrentIndex(2)
+        self.interval_combo.currentTextChanged.connect(self.change_interval)
+        interval_layout.addWidget(self.interval_combo)
 
         # Snapshot Settings
         self.snapshot_name_line = QLineEdit()
@@ -154,17 +165,22 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
         self.autosave_checkbox.setChecked(self.autosaver.is_enabled)
         
         # Set combo box to match current interval
-        #interval_text = f"{self.autosaver.interval_minutes} min"
-        #index = self.interval_combo.findText(interval_text)
-        #if index >= 0:
-        #    self.interval_combo.setCurrentIndex(index)
+        interval_text = f"{self.autosaver.interval_minutes} min"
+        index = self.interval_combo.findText(interval_text)
+        self.interval_combo.setCurrentIndex(index)
+
+        print(self.autosaver.is_enabled, self.autosaver.interval_minutes)
 
     def toggle_autosave(self, state):
         if state == 0:
             self.autosaver.stop()
         else:
             self.autosaver.start()
-        
+
+    def change_interval(self, text: str):
+        interval = int(text.split()[0])
+        self.autosaver.set_interval(interval)
+        pass
 
 def launch() -> None:
     aperture_window = ApertureWindow(parent=get_maya_main_window())
