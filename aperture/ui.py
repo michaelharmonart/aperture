@@ -5,6 +5,7 @@ from typing import Any
 from PySide6 import QtWidgets
 from aperture.core.autosave import Autosaver
 from maya import OpenMayaUI as omui
+from maya.OpenMaya import MSceneMessage
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -83,8 +84,10 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
     ) -> None:
         super().__init__(parent=parent)
         self.autosaver = Autosaver.get_instance()
+        self._open_callbacks = MSceneMessage.addCallback(MSceneMessage.kAfterOpen, lambda *args: self.refresh())
         self.snapshots: list[Snapshot] = []
         self.setup_ui()
+        self.update_file_info()
         self.update_ui_from_autosaver()
         self.refresh_snapshots()
         self.autosaver.autosave_completed.connect(self.refresh_snapshots)
@@ -97,13 +100,11 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
         self.setLayout(main_layout)
 
         # Filepath
-        filepath = get_current_filepath()
-        if filepath is not None:
-            information_label = QLabel(str(filepath))
-            information_label.setWordWrap(True)
-            information_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            main_layout.addWidget(information_label)
-
+        self.information_label = QLabel()
+        self.information_label.setWordWrap(True)
+        self.information_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        main_layout.addWidget(self.information_label) 
+            
         # Autosave Settings
         autosave_content = QGroupBox("Autosave Settings")
         main_layout.addWidget(autosave_content)
@@ -157,6 +158,17 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
         scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         self.snapshot_scroll_layout.addStretch()
+
+    def update_file_info(self):
+        filepath = get_current_filepath()
+        if filepath is None:
+            self.information_label.setText("Unsaved File")
+        else:
+            self.information_label.setText(str(filepath))
+
+    def refresh(self):
+        self.refresh_snapshots()
+        self.update_file_info()
 
     def refresh_snapshots(self):
         for snapshot in reversed(get_snapshots()):
