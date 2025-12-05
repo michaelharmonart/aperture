@@ -57,6 +57,8 @@ def get_snapshots() -> list[Snapshot]:
 
 def save_and_snapshot(message: str | None = None, autosave: bool = False) -> Snapshot | None:
     current_file = get_current_filepath()
+    if current_file is None:
+        return
     if autosave and not is_file_modified():
         return
     save_file()
