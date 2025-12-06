@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-import os
-import pwd
+import getpass
 
 from pathlib import Path
 from aperture.core.file import get_current_filepath, is_file_modified, load_file, save_file
@@ -22,10 +21,7 @@ def get_time_string() -> str:
     return now.strftime("%a %b %-d at %-I:%M%p")
 
 def get_username() -> str:
-    try:
-        return pwd.getpwuid(os.getuid())[0]
-    except ImportError:
-        return "Windows User"
+    return getpass.getuser()
 
 def get_or_init_repo() -> Repo | None:
     path = get_current_filepath()

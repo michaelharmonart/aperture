@@ -1,15 +1,9 @@
-from curses import color_pair
-from typing import Any
-
-
 from PySide6 import QtWidgets
-from aperture.core.autosave import Autosaver
 from maya import OpenMayaUI as omui
 from maya.OpenMaya import MSceneMessage
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QDialog,
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -23,6 +17,7 @@ from PySide6.QtWidgets import (
 from shiboken6 import wrapInstance
 from shiboken6.Shiboken import Object
 
+from aperture.core.autosave import Autosaver
 from aperture.core.file import get_current_filepath
 from aperture.core.snapshot import (
     Snapshot,
@@ -103,8 +98,8 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
         self.information_label = QLabel()
         self.information_label.setWordWrap(True)
         self.information_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        main_layout.addWidget(self.information_label) 
-            
+        main_layout.addWidget(self.information_label)
+
         # Autosave Settings
         autosave_content = QGroupBox("Autosave Settings")
         main_layout.addWidget(autosave_content)
