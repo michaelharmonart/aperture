@@ -22,7 +22,13 @@ def get_or_create_snapshot_folder(filepath: Path) -> Path | None:
 
 def get_time_string() -> str:
     now = datetime.now()
-    return now.strftime("%a %b %-d at %-I:%M%p")
+    weekday_str = now.strftime("%a")
+    month_str = now.strftime("%b")
+    day = now.day
+    hour = now.hour % 12 or 12
+    minute = now.minute
+    am_pm_str = now.strftime("%p")
+    return f"{weekday_str} {month_str} {day} at {hour}:{minute:02d}{am_pm_str}"
 
 
 def get_username() -> str:
