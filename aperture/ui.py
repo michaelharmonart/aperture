@@ -1,7 +1,7 @@
-from PySide6 import QtWidgets
 from maya import OpenMayaUI as omui
-from maya.OpenMaya import MSceneMessage
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
+from maya.OpenMaya import MSceneMessage
+from PySide6 import QtWidgets
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QGroupBox,
@@ -79,7 +79,9 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
     ) -> None:
         super().__init__(parent=parent)
         self.autosaver = Autosaver.get_instance()
-        self._open_callbacks = MSceneMessage.addCallback(MSceneMessage.kAfterOpen, lambda *args: self.refresh())
+        self._open_callbacks = MSceneMessage.addCallback(
+            MSceneMessage.kAfterOpen, lambda *args: self.refresh()
+        )
         self.snapshots: list[Snapshot] = []
         self.setup_ui()
         self.update_file_info()
@@ -104,7 +106,7 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
         autosave_content = QGroupBox("Autosave Settings")
         main_layout.addWidget(autosave_content)
         autosave_layout = QHBoxLayout()
-        autosave_layout.setContentsMargins(4,4,4,4)
+        autosave_layout.setContentsMargins(4, 4, 4, 4)
         autosave_content.setLayout(autosave_layout)
 
         self.autosave_checkbox = QtWidgets.QCheckBox("Enable")
@@ -115,7 +117,7 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
         # Interval controls
         interval_content = QWidget()
         interval_layout = QtWidgets.QHBoxLayout()
-        interval_layout.setContentsMargins(0,0,0,0)
+        interval_layout.setContentsMargins(0, 0, 0, 0)
         interval_layout.addWidget(QtWidgets.QLabel("Interval:"))
         interval_content.setLayout(interval_layout)
         autosave_layout.addWidget(interval_content)
@@ -166,11 +168,28 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
         self.update_file_info()
 
     def refresh_snapshots(self):
-        for snapshot in reversed(get_snapshots()):
-            if snapshot not in self.snapshots:
-                card = SnapshotCard(snapshot)
-                self.snapshot_scroll_layout.insertWidget(0, card)
-                self.snapshots.append(snapshot)
+        new = set(get_snapshots())
+        old = set(self.snapshots)
+        to_add = new - old
+        to_remove = old - new
+
+        if to_remove:
+            for i in reversed(range(self.snapshot_scroll_layout.count())):
+                item = self.snapshot_scroll_layout.itemAt(i)
+                widget = item.widget()
+                if widget:
+                    if isinstance(widget, SnapshotCard):
+                        card = widget
+                        if card.snapshot in to_remove:
+                            widget.setParent(None)
+                            self.snapshots.remove(card.snapshot)
+
+        if to_add:
+            for snapshot in reversed(get_snapshots()):
+                if snapshot in to_add:
+                    card = SnapshotCard(snapshot)
+                    self.snapshot_scroll_layout.insertWidget(0, card)
+                    self.snapshots.append(snapshot)
 
     def save_snapshot(self):
         name = None

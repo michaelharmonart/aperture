@@ -1,27 +1,33 @@
+import getpass
 from dataclasses import dataclass
 from datetime import datetime
-import getpass
-
 from pathlib import Path
-from aperture.core.file import get_current_filepath, is_file_modified, load_file, save_file
+
 from git import Commit, InvalidGitRepositoryError, Repo
 
+from aperture.core.file import get_current_filepath, is_file_modified, load_file, save_file
+
+
 @dataclass(eq=True, frozen=True)
-class Snapshot():
+class Snapshot:
     commit: Commit
 
-def get_or_create_snapshot_folder(filepath : Path) -> Path | None:
+
+def get_or_create_snapshot_folder(filepath: Path) -> Path | None:
     snapshots_path: Path = filepath.parent / ".snapshots"
     if not snapshots_path.exists():
         snapshots_path.mkdir()
     return snapshots_path
 
+
 def get_time_string() -> str:
     now = datetime.now()
     return now.strftime("%a %b %-d at %-I:%M%p")
 
+
 def get_username() -> str:
     return getpass.getuser()
+
 
 def get_or_init_repo() -> Repo | None:
     path = get_current_filepath()
@@ -33,7 +39,10 @@ def get_or_init_repo() -> Repo | None:
     else:
         return None
 
-def create_snapshot(repo: Repo, filepaths: Path | list[Path], message: str | None = None, autosave: bool = False) -> Snapshot:
+
+def create_snapshot(
+    repo: Repo, filepaths: Path | list[Path], message: str | None = None, autosave: bool = False
+) -> Snapshot:
     if message is None:
         if autosave:
             message = f"Autosave: {get_time_string()}"
@@ -43,13 +52,21 @@ def create_snapshot(repo: Repo, filepaths: Path | list[Path], message: str | Non
     commit = repo.index.commit(message)
     return Snapshot(commit)
 
+
 def get_snapshots() -> list[Snapshot]:
     repo = get_or_init_repo()
     if repo is None:
         return []
     if repo.head.is_valid() is False:
         return []
-    return [Snapshot(commit) for commit in repo.iter_commits()]
+    current_file = get_current_filepath()
+    if current_file is None:
+        return []
+    repo_root = Path(repo.working_dir)
+    return [
+        Snapshot(commit) for commit in repo.iter_commits(paths=current_file.relative_to(repo_root))
+    ]
+
 
 def save_and_snapshot(message: str | None = None, autosave: bool = False) -> Snapshot | None:
     current_file = get_current_filepath()
@@ -60,12 +77,16 @@ def save_and_snapshot(message: str | None = None, autosave: bool = False) -> Sna
     save_file()
     repo = get_or_init_repo()
     if current_file and repo:
-        return create_snapshot(repo=repo, filepaths=current_file, message=message, autosave=autosave)
+        return create_snapshot(
+            repo=repo, filepaths=current_file, message=message, autosave=autosave
+        )
+
 
 def restore_snapshot(snapshot: Snapshot):
     repo = get_or_init_repo()
     if repo is not None:
         repo.git.checkout(snapshot.commit.hexsha, "--", get_current_filepath())
+
 
 def load_snapshot(snapshot: Snapshot):
     restore_snapshot(snapshot)
