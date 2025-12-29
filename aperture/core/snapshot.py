@@ -3,7 +3,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from git import Commit, InvalidGitRepositoryError, Repo
+from git import Commit, GitCommandError, InvalidGitRepositoryError, Repo
+from git.repo.base import NoSuchPathError
 
 from aperture.core.file import get_current_filepath, is_file_modified, load_file, save_file
 
@@ -35,13 +36,36 @@ def get_username() -> str:
     return getpass.getuser()
 
 
+def repo_from_filepath(filepath: Path) -> Repo | None:
+    try:
+        return Repo(filepath.parent)
+    except InvalidGitRepositoryError:
+        return Repo.init(filepath.parent)
+    except NoSuchPathError:
+        return None
+
+
+def is_repo_safe(repo: Repo) -> bool:
+    try:
+        repo.git.status()
+        return True
+    except GitCommandError as e:
+        return False
+
+def make_repo_safe(repo: Repo):
+    path = repo.working_tree_dir
+    if path is not None:
+        repo.git.config("--global", "--add", "safe.directory", path)
+
 def get_or_init_repo() -> Repo | None:
     path = get_current_filepath()
     if path is not None:
-        try:
-            return Repo(path.parent)
-        except InvalidGitRepositoryError:
-            return Repo.init(path.parent)
+        repo = repo_from_filepath(path)
+        if repo is None:
+            return None
+        if not is_repo_safe(repo):
+            make_repo_safe(repo)
+        return repo
     else:
         return None
 
