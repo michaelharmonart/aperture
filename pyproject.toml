@@ -18,8 +18,18 @@ extraPaths = [
     "/usr/autodesk/maya/lib/python3.11/",
     "/usr/autodesk/maya/lib/python3.11/site-packages",
     "/usr/autodesk/ApplicationPlugins/ngskintools2/Contents/scripts",
-
 ]
+
+[tool.ty.environment]
+extra-paths = [
+    "./.stubs/",
+    "./.venv/lib/python3.11/site-packages",
+    "/usr/autodesk/maya/lib/python3.11/",
+    "/usr/autodesk/maya/lib/python3.11/site-packages",
+    "/usr/autodesk/ApplicationPlugins/ngskintools2/Contents/scripts",
+]
+
+
 
 [dependency-groups]
 dev = [
@@ -28,4 +38,3 @@ dev = [
     "pyside6>=6.10.0",
     "ruff>=0.14.4",
 ]
-

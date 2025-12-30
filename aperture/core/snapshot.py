@@ -120,4 +120,6 @@ def restore_snapshot(snapshot: Snapshot):
 
 def load_snapshot(snapshot: Snapshot):
     restore_snapshot(snapshot)
-    load_file(get_current_filepath())
+    current_filepath = get_current_filepath()
+    if current_filepath is not None:
+        load_file(current_filepath)

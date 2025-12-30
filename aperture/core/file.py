@@ -1,3 +1,4 @@
+from typing import cast
 from pathlib import Path
 import maya.cmds as cmds
 
@@ -6,10 +7,11 @@ def get_current_filepath() -> Path | None:
     Returns the full path of the currently open Maya scene as a Path object,
     or None if the scene has not been saved yet.
     """
-    filename: str = cmds.file(q=True, sn=True)
+    filename = cast(str, cmds.file(query=True, sceneName=True))
     if filename == "":
         return None
     return Path(filename)
+
 
 def is_file_modified() -> bool:
     """
@@ -18,11 +20,12 @@ def is_file_modified() -> bool:
     Returns:
         bool: True if the scene has unsaved changes, False otherwise.
     """
-    return cmds.file(query=True, modified=True)
+    file_query = cast(bool, cmds.file(query=True, modified=True))
+    return file_query
 
 def save_file():
     cmds.file(save=True, force=True)
-    
+
 def load_file(path: Path):
     if is_file_modified():
         result = cmds.confirmDialog(

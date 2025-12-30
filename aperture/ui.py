@@ -1,3 +1,4 @@
+from typing import cast
 from maya import OpenMayaUI as omui
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from maya.OpenMaya import MSceneMessage
@@ -35,10 +36,11 @@ def get_maya_main_window() -> Object:
 class SnapshotCard(QtWidgets.QFrame):
     def __init__(self, snapshot: Snapshot, parent=None) -> None:
         super().__init__(parent)
-        self.color_pairs = {"Autosave:": "#23292b", "Snapshot:": "#41786b"}
+        self.color_pairs: dict[str, str] = {"Autosave:": "#23292b", "Snapshot:": "#41786b"}
         self.color_str = "#2E3440"
+        commit_message = cast(str, snapshot.commit.message)
         for key, color in self.color_pairs.items():
-            if snapshot.commit.message.startswith(key):
+            if commit_message.startswith(key):
                 self.color_str = color
         self.setStyleSheet(f"""
             QFrame {{
@@ -54,7 +56,7 @@ class SnapshotCard(QtWidgets.QFrame):
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
-        load_button = QtWidgets.QPushButton(self.snapshot.commit.message)
+        load_button = QtWidgets.QPushButton(commit_message)
         load_button.clicked.connect(self.call_load_snapshot)
         load_button.setStyleSheet("padding-left: 4px; text-align: left;")
         load_button.setMinimumWidth(50)
