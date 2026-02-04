@@ -1,10 +1,12 @@
 from typing import cast
+
 from maya import OpenMayaUI as omui
-from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
+from maya.app.general.mayaMixin import MayaQWidgetDockableMixin  # type :ignore
 from maya.OpenMaya import MSceneMessage
-from PySide6 import QtWidgets
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (
+from Qt import QtWidgets
+from Qt.QtCompat import wrapInstance
+from Qt.QtCore import Qt
+from Qt.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -15,8 +17,6 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from shiboken6 import wrapInstance
-from shiboken6.Shiboken import Object
 
 from aperture.core.autosave import Autosaver
 from aperture.core.file import get_current_filepath
@@ -28,7 +28,7 @@ from aperture.core.snapshot import (
 )
 
 
-def get_maya_main_window() -> Object:
+def get_maya_main_window():
     mw_ptr = omui.MQtUtil.mainWindow()
     return wrapInstance(int(mw_ptr), QMainWindow)
 
