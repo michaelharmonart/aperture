@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 from typing import cast
 
 from maya import OpenMayaUI as omui
+from maya import cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin  # type :ignore
 from maya.OpenMaya import MSceneMessage
 from Qt import QtWidgets
@@ -27,10 +30,62 @@ from aperture.core.snapshot import (
     save_and_snapshot,
 )
 
+_window_instance: ApertureWindow | None = None
+WINDOW_OBJECT_NAME = "apertureWindow"
+WORKSPACE_CONTROL_NAME = WINDOW_OBJECT_NAME + "WorkspaceControl"
+
 
 def get_maya_main_window():
     mw_ptr = omui.MQtUtil.mainWindow()
     return wrapInstance(int(mw_ptr), QMainWindow)
+
+
+def delete_workspace_control(control: str):
+    if cmds.workspaceControl(control, query=True, exists=True):
+        cmds.workspaceControl(control, edit=True, close=True)
+        cmds.deleteUI(control, control=True)
+
+
+def _restore() -> None:
+    """Called by Maya's workspaceControl restore mechanism."""
+    global _window_instance
+
+    # Always recreate the widget on restore
+    _window_instance = ApertureWindow(parent=get_maya_main_window())  # type: ignore
+
+    # Locate the workspace control that Maya already created.
+    workspace_ptr = omui.MQtUtil.findControl(WORKSPACE_CONTROL_NAME)
+    # Get a pointer to our widget so we can hand it to Maya.
+    widget_ptr = omui.MQtUtil.findControl(_window_instance.objectName())
+    if workspace_ptr and widget_ptr:
+        omui.MQtUtil.addWidgetToMayaLayout(int(widget_ptr), int(workspace_ptr))
+
+
+# This uiScript is called by Maya to recreate the widget when restoring layout.
+# Here we generate the import and command run lines to make it easy to rename things with IDE tools without breaking this.
+UI_SCRIPT = f"""
+import {__name__}
+{__name__}.{_restore.__name__}()
+"""
+
+
+def close() -> None:
+    global _window_instance
+    if _window_instance is not None:
+        _window_instance.close()
+
+
+def launch() -> None:
+    global _window_instance
+
+    delete_workspace_control(WORKSPACE_CONTROL_NAME)
+
+    _window_instance = ApertureWindow(parent=get_maya_main_window())  # type: ignore
+    _window_instance.show(
+        dockable=True,  # type: ignore
+        uiScript=UI_SCRIPT,  # type: ignore
+        workspaceControlName=WORKSPACE_CONTROL_NAME,  # type: ignore
+    )
 
 
 class SnapshotCard(QtWidgets.QFrame):
@@ -80,6 +135,7 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
         parent,
     ) -> None:
         super().__init__(parent=parent)
+        self.setObjectName(WINDOW_OBJECT_NAME)
         self.autosaver = Autosaver.get_instance()
         self._open_callbacks = MSceneMessage.addCallback(
             MSceneMessage.kAfterOpen, lambda *args: self.refresh()
@@ -221,8 +277,3 @@ class ApertureWindow(MayaQWidgetDockableMixin, QWidget):
         interval = int(text.split()[0])
         self.autosaver.set_interval(interval)
         pass
-
-
-def launch() -> None:
-    aperture_window = ApertureWindow(parent=get_maya_main_window())
-    aperture_window.show(dockable=True)

@@ -1,25 +1,29 @@
-from PySide6.QtCore import QObject
 from typing import Self, cast
 
-
+from maya import OpenMayaUI as omui
 from PySide6 import QtCore
+from PySide6.QtCore import QObject
 from PySide6.QtWidgets import QMainWindow
-from aperture.core.snapshot import save_and_snapshot
 from shiboken6 import Object, wrapInstance
-from maya import OpenMayaUI as omui, cmds
+
+from aperture.core.optionvar import BoolOptionVar, IntOptionVar
+from aperture.core.snapshot import save_and_snapshot
+
 
 class Autosaver(QtCore.QObject):
-
     _instance = None
 
     autosave_completed = QtCore.Signal()  # Signal emitted after autosave
 
-    def __init__(self, parent = None) -> None:
+    def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.autosave)
         self.is_enabled: bool = False
         self.interval_minutes = 5
+
+        self.enabled_option = BoolOptionVar("aperture.autosave_enabled", False)
+        self.interval_minutes_option = IntOptionVar("aperture.autosave_interval", 5)
 
         # Parent to Maya's main window to persist
         maya_main = self.get_maya_main_window()
@@ -56,7 +60,6 @@ class Autosaver(QtCore.QObject):
         if self.is_enabled and self.interval_minutes != interval_minutes:
             self.start()
 
-
     def autosave(self) -> None:
         save_and_snapshot(autosave=True)
         self.autosave_completed.emit()
@@ -64,28 +67,22 @@ class Autosaver(QtCore.QObject):
 
     def save_preferences(self):
         """Save autosave settings to Maya preferences"""
-        cmds.optionVar(intValue=('animSnapshot_autosave_enabled', int(self.is_enabled)))
-        cmds.optionVar(intValue=('animSnapshot_autosave_interval', self.interval_minutes))
+        self.enabled_option.value = self.is_enabled
+        self.interval_minutes_option.value = self.interval_minutes
 
     def load_preferences(self):
         """Load autosave settings from Maya preferences"""
-        if cmds.optionVar(exists='animSnapshot_autosave_enabled'):
-            self.is_enabled = bool(cmds.optionVar(query='animSnapshot_autosave_enabled'))
-
-        if cmds.optionVar(exists='animSnapshot_autosave_interval'):
-            returned_value = cmds.optionVar(query='animSnapshot_autosave_interval')
-            if isinstance(returned_value, int):
-                self.interval_minutes = returned_value
+        self.is_enabled = self.enabled_option.value
+        self.interval_minutes = self.interval_minutes_option.value
 
         # Auto-start if it was enabled
         if self.is_enabled:
             self.start()
 
     @staticmethod
-    def get_maya_main_window() -> QObject :
+    def get_maya_main_window() -> QObject:
         mw_ptr = omui.MQtUtil.mainWindow()
         return cast(QObject, wrapInstance(int(mw_ptr), QMainWindow))
-
 
     @classmethod
     def get_instance(cls) -> Self:

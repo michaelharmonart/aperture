@@ -1,4 +1,5 @@
 import getpass
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -7,6 +8,8 @@ from git import Commit, GitCommandError, InvalidGitRepositoryError, Repo
 from git.repo.base import NoSuchPathError
 
 from aperture.core.file import get_current_filepath, is_file_modified, load_file, save_file
+
+log = logging.getLogger(__name__)
 
 
 @dataclass(eq=True, frozen=True)
@@ -52,10 +55,12 @@ def is_repo_safe(repo: Repo) -> bool:
     except GitCommandError as e:
         return False
 
+
 def make_repo_safe(repo: Repo):
     path = repo.working_tree_dir
     if path is not None:
         repo.git.config("--global", "--add", "safe.directory", path)
+
 
 def get_or_init_repo() -> Repo | None:
     path = get_current_filepath()
@@ -101,8 +106,12 @@ def get_snapshots() -> list[Snapshot]:
 def save_and_snapshot(message: str | None = None, autosave: bool = False) -> Snapshot | None:
     current_file = get_current_filepath()
     if current_file is None:
+        log.warning(
+            "Snapshot skipped: No current file path found. Save the file before creating a snapshot."
+        )
         return
     if autosave and not is_file_modified():
+        log.info("Autosave skipped: File had no changes")
         return
     save_file()
     repo = get_or_init_repo()
